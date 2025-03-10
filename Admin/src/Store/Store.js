@@ -9,6 +9,21 @@ const useStore = create((set, get) => ({
   socket: null,
   announcements: [], // Changed to lowercase for convention
 
+  fetchMe: async () => {
+    const response = await fetch("http://localhost:3000/admin/me", {
+      method: "GET",
+      headers: {
+        Authorization: `${get().userToken}`,
+      },
+    });
+    const data = await response.json();
+    if (response.ok) {
+      set({ userInformation: data });
+    } else {
+      console.error("Failed to fetch user information:", data.message);
+    }
+  },
+
   // Fetch announcements from the backend
   getAnnouncements: async () => {
     try {
@@ -49,6 +64,7 @@ const useStore = create((set, get) => ({
 
     // Listen for real-time announcements
     socket.on("announcement", (newAnnouncement) => {
+      console.log("heheheheh");
       console.log("New announcement received:", newAnnouncement);
       set((state) => ({
         announcements: [...state.announcements, newAnnouncement],
@@ -70,6 +86,7 @@ const useStore = create((set, get) => ({
       set({ isAuthenticated: true });
       get().socketInitialization();
       get().getAnnouncements(); // Fetch initial announcements
+      get().fetchMe();
     }
   },
 
@@ -81,6 +98,7 @@ const useStore = create((set, get) => ({
     localStorage.setItem("userToken", token); // Persist token
     get().socketInitialization();
     get().getAnnouncements(); // Fetch announcements after login
+    get().fetchMe();
   },
 
   // Set user information

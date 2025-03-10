@@ -24,7 +24,7 @@ module.exports.MakeAnAnnouncement = async (req, res) => {
     const announcement = new Announcement({
       title,
       description,
-      adminId,
+      admin: adminId,
     });
 
     await announcement.save();
@@ -37,7 +37,7 @@ module.exports.MakeAnAnnouncement = async (req, res) => {
     io.emit("announcement", {
       title: announcement.title,
       description: announcement.description,
-      adminId: announcement.adminId,
+      admin: announcement.admin,
       timestamp: announcement.timestamp || new Date(),
     });
 
@@ -55,8 +55,9 @@ module.exports.MakeAnAnnouncement = async (req, res) => {
 
 module.exports.GetAnnouncements = async (req, res) => {
   try {
-    const announcements = await Announcement.find().sort({ timestamp: -1 });
-
+    const announcements = await Announcement.find()
+      .sort({ createdAt: -1 })
+      .populate("admin", "name number  ");
     res.status(200).json(announcements);
   } catch (err) {
     console.error("Error in GetAnnouncements:", err);
