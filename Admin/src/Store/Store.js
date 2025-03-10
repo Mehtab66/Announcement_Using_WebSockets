@@ -1,4 +1,3 @@
-// store/authStore.js
 import { create } from "zustand";
 import { io } from "socket.io-client";
 
@@ -7,24 +6,28 @@ const useStore = create((set, get) => ({
   isAuthenticated: false,
   userInformation: null,
   socket: null,
-  announcements: [], // Changed to lowercase for convention
+  announcements: [],
+  isLoadingAuth: true, // Added for auth loading state
 
   fetchMe: async () => {
-    const response = await fetch("http://localhost:3000/admin/me", {
-      method: "GET",
-      headers: {
-        Authorization: `${get().userToken}`,
-      },
-    });
-    const data = await response.json();
-    if (response.ok) {
-      set({ userInformation: data });
-    } else {
-      console.error("Failed to fetch user information:", data.message);
+    try {
+      const response = await fetch("http://localhost:3000/admin/me", {
+        method: "GET",
+        headers: {
+          Authorization: `${get().userToken}`,
+        },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        set({ userInformation: data });
+      } else {
+        console.error("Failed to fetch user information:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching user info:", error);
     }
   },
 
-  // Fetch announcements from the backend
   getAnnouncements: async () => {
     try {
       const token = get().userToken;
@@ -32,14 +35,13 @@ const useStore = create((set, get) => ({
         "http://localhost:3000/announcement/getannouncements",
         {
           headers: {
-            Authorization: `${token}`, // Add token for authentication if required
+            Authorization: `${token}`,
           },
         }
       );
       const data = await response.json();
-      console.log("Fetched announcements:", data);
       if (response.ok) {
-        set({ announcements: data }); // Update state with fetched data
+        set({ announcements: data });
       } else {
         console.error("Failed to fetch announcements:", data.message);
       }
@@ -48,13 +50,11 @@ const useStore = create((set, get) => ({
     }
   },
 
-  // Socket initialization
   socketInitialization: () => {
     const token = get().userToken;
-    if (!token) return;
+    if (!token || get().socket) return;
 
     const socket = io("http://localhost:3000", {
-      // Changed to http://localhost:3000
       auth: { token },
     });
 
@@ -62,12 +62,10 @@ const useStore = create((set, get) => ({
       console.log("Socket connected:", socket.id);
     });
 
-    // Listen for real-time announcements
     socket.on("announcement", (newAnnouncement) => {
-      console.log("heheheheh");
       console.log("New announcement received:", newAnnouncement);
       set((state) => ({
-        announcements: [...state.announcements, newAnnouncement],
+        announcements: [newAnnouncement, ...state.announcements],
       }));
     });
 
@@ -78,35 +76,30 @@ const useStore = create((set, get) => ({
     set({ socket });
   },
 
-  // Check authentication and initialize
-  checkAuth: () => {
+  checkAuth: async () => {
+    console.log("Checking auth...");
     const token = localStorage.getItem("userToken");
     if (token) {
-      set({ userToken: token });
-      set({ isAuthenticated: true });
+      set({ userToken: token, isAuthenticated: true });
       get().socketInitialization();
-      get().getAnnouncements(); // Fetch initial announcements
-      get().fetchMe();
+      await Promise.all([get().fetchMe(), get().getAnnouncements()]);
     }
+    set({ isLoadingAuth: false });
   },
 
-  // Set user token
   setUserToken: (token) => {
     console.log("Setting token:", token);
-    set({ userToken: token });
-    set({ isAuthenticated: true });
-    localStorage.setItem("userToken", token); // Persist token
+    set({ userToken: token, isAuthenticated: true });
+    localStorage.setItem("userToken", token);
     get().socketInitialization();
-    get().getAnnouncements(); // Fetch announcements after login
     get().fetchMe();
+    get().getAnnouncements();
   },
 
-  // Set user information
   setUserInformation: (user) => {
     set({ userInformation: user });
   },
 
-  // Logout
   Logout: () => {
     const socket = get().socket;
     if (socket) socket.disconnect();
@@ -116,6 +109,7 @@ const useStore = create((set, get) => ({
       userInformation: null,
       socket: null,
       announcements: [],
+      isLoadingAuth: false,
     });
     localStorage.removeItem("userToken");
   },

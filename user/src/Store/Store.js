@@ -6,7 +6,8 @@ const useStore = create((set, get) => ({
   userInformation: null,
   isAuthenticated: false,
   announcements: [],
-  socket: null, // Explicitly track socket in state
+  socket: null,
+  isLoadingAuth: true, // Add loading state for auth check
 
   fetchMe: async () => {
     try {
@@ -28,14 +29,15 @@ const useStore = create((set, get) => ({
     }
   },
 
-  checkAuth: () => {
+  checkAuth: async () => {
+    console.log("Checking auth...");
     const token = localStorage.getItem("token");
     if (token) {
       set({ userToken: token, isAuthenticated: true });
-      get().socketInitialization(); // Initialize socket
-      get().fetchMe();
-      get().getAnnouncements(); // Fetch initial announcements
+      get().socketInitialization();
+      await Promise.all([get().fetchMe(), get().getAnnouncements()]);
     }
+    set({ isLoadingAuth: false }); // Auth check complete
   },
 
   getAnnouncements: async () => {
@@ -68,7 +70,7 @@ const useStore = create((set, get) => ({
 
   socketInitialization: () => {
     const token = get().userToken;
-    if (!token || get().socket) return; // Prevent multiple socket instances
+    if (!token || get().socket) return;
 
     const socket = io("http://localhost:3000", {
       auth: { token },
@@ -101,8 +103,9 @@ const useStore = create((set, get) => ({
       userInformation: null,
       socket: null,
       announcements: [],
+      isLoadingAuth: false,
     });
-    localStorage.removeItem("token"); // Corrected from "userToken" to "token"
+    localStorage.removeItem("token");
   },
 }));
 

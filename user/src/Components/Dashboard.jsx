@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import useStore from "../Store/Store";
 import { useNavigate } from "react-router-dom";
 
@@ -10,17 +10,33 @@ const Dashboard = () => {
     announcements,
     socket,
     userInformation,
-    Logout,
+    checkAuth,
+    isLoadingAuth,
   } = useStore();
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Run checkAuth on mount and handle redirect
   useEffect(() => {
-    if (!isAuthenticated) {
+    checkAuth(); // Trigger auth check on mount
+  }, [checkAuth]);
+
+  // Redirect logic after auth check
+  useEffect(() => {
+    if (!isLoadingAuth && !isAuthenticated) {
       navigate("/");
-    } else {
+    } else if (isAuthenticated && !isLoadingAuth) {
       getAnnouncements();
     }
-  }, [isAuthenticated, navigate, getAnnouncements]);
+  }, [isAuthenticated, isLoadingAuth, navigate, getAnnouncements]);
+
+  // Show loading state while checking auth
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-600 text-lg">Loading...</p>
+      </div>
+    );
+  }
 
   const filteredAnnouncements = announcements.filter(
     (announcement) =>
@@ -81,7 +97,7 @@ const Dashboard = () => {
               Announcements
             </h1>
             <p className="text-sm text-gray-500">
-              Stay updated with announcements
+              Stay updated with society news
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -108,12 +124,6 @@ const Dashboard = () => {
               </svg>
             </div>
           </div>
-          <button
-            onClick={Logout}
-            className="bg-red-500 text-white rounded-xl p-4"
-          >
-            Logout
-          </button>
         </header>
 
         {/* Announcements Section */}
