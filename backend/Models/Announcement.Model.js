@@ -1,21 +1,15 @@
+// Models/Announcement.Model.js
 const mongoose = require("mongoose");
-const AnnouncementSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-  Admin: {
+
+const announcementSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  adminId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Admin",
     required: true,
   },
+  timestamp: { type: Date, default: Date.now },
 });
-const Announcement = mongoose.model("Announcement", AnnouncementSchema);
+
+module.exports = mongoose.model("Announcement", announcementSchema);

@@ -1,62 +1,105 @@
 // store/authStore.js
 import { create } from "zustand";
-import { useEffect } from "react";
 import { io } from "socket.io-client";
 
-// Store
 const useStore = create((set, get) => ({
   userToken: null,
-  isAuthenticated: false, // Fixed typo
+  isAuthenticated: false,
   userInformation: null,
   socket: null,
-  //Actions:
+  announcements: [], // Changed to lowercase for convention
 
-  //Socket Initialization
+  // Fetch announcements from the backend
+  getAnnouncements: async () => {
+    try {
+      const token = get().userToken;
+      const response = await fetch(
+        "http://localhost:3000/announcement/getannouncements",
+        {
+          headers: {
+            Authorization: `${token}`, // Add token for authentication if required
+          },
+        }
+      );
+      const data = await response.json();
+      console.log("Fetched announcements:", data);
+      if (response.ok) {
+        set({ announcements: data }); // Update state with fetched data
+      } else {
+        console.error("Failed to fetch announcements:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+    }
+  },
 
+  // Socket initialization
   socketInitialization: () => {
     const token = get().userToken;
     if (!token) return;
-    const socket = io("127.0.0.1:3000", {
+
+    const socket = io("http://localhost:3000", {
+      // Changed to http://localhost:3000
       auth: { token },
     });
 
     socket.on("connect", () => {
-      console.log("Socket connected", socket.id);
+      console.log("Socket connected:", socket.id);
     });
+
+    // Listen for real-time announcements
+    socket.on("announcement", (newAnnouncement) => {
+      console.log("New announcement received:", newAnnouncement);
+      set((state) => ({
+        announcements: [...state.announcements, newAnnouncement],
+      }));
+    });
+
     socket.on("disconnect", () => {
-      console.log("Socket disconnected", socket.id);
+      console.log("Socket disconnected:", socket.id);
     });
+
     set({ socket });
   },
 
-  // Check if user is authenticated
+  // Check authentication and initialize
   checkAuth: () => {
-    if (localStorage.getItem("userToken")) {
-      set({ userToken: localStorage.getItem("userToken") });
+    const token = localStorage.getItem("userToken");
+    if (token) {
+      set({ userToken: token });
       set({ isAuthenticated: true });
       get().socketInitialization();
+      get().getAnnouncements(); // Fetch initial announcements
     }
   },
 
-  // Set user Token
+  // Set user token
   setUserToken: (token) => {
-    console.log(token);
+    console.log("Setting token:", token);
     set({ userToken: token });
     set({ isAuthenticated: true });
+    localStorage.setItem("userToken", token); // Persist token
     get().socketInitialization();
+    get().getAnnouncements(); // Fetch announcements after login
   },
 
-  // Set user Information
+  // Set user information
   setUserInformation: (user) => {
     set({ userInformation: user });
   },
 
-  //Logout
+  // Logout
   Logout: () => {
-    set({ token: null }),
-      set({ isAuthenticated: false }),
-      set({ userInformation: null });
-    set({ socket: null });
+    const socket = get().socket;
+    if (socket) socket.disconnect();
+    set({
+      userToken: null,
+      isAuthenticated: false,
+      userInformation: null,
+      socket: null,
+      announcements: [],
+    });
+    localStorage.removeItem("userToken");
   },
 }));
 

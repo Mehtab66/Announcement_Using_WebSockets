@@ -52,7 +52,7 @@ module.exports.loginUser = async (req, res) => {
       });
     }
 
-    const token = generateToken(user);
+    const token = generateToken(user, "User");
     res.status(200).json({
       token,
     });

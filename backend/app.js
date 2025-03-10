@@ -10,6 +10,7 @@ var usersRouter = require("./routes/users");
 var cors = require("cors");
 var app = express();
 var adminRouter = require("./routes/admin.routes");
+var announcementRouter = require("./routes/announcement.routes");
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
@@ -24,7 +25,7 @@ connectDB();
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/admin", adminRouter);
-
+app.use("/announcement", announcementRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
