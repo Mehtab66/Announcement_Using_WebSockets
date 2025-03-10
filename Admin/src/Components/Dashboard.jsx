@@ -14,13 +14,17 @@ const Dashboard = () => {
   } = useStore();
   const [formData, setFormData] = useState({ title: "", description: "" });
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   const announcementsPerPage = 9;
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/");
     } else {
-      getAnnouncements();
+      setIsLoading(true);
+      getAnnouncements()
+        .then(() => setIsLoading(false))
+        .catch(() => setIsLoading(false));
     }
   }, [isAuthenticated, navigate, getAnnouncements]);
 
@@ -28,6 +32,7 @@ const Dashboard = () => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
+
   const onSubmitHandle = async (e) => {
     e.preventDefault();
     try {
@@ -67,6 +72,14 @@ const Dashboard = () => {
   const totalPages = Math.ceil(announcements.length / announcementsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  if (isLoading || !userInformation) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600 text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -118,14 +131,11 @@ const Dashboard = () => {
           <h1 className="text-3xl text-center font-bold text-gray-800">
             Admin Dashboard
           </h1>
-
           <p>
-            {" "}
-            <strong>Username:</strong> {userInformation.name}
+            <strong>Username:</strong> {userInformation.name || "N/A"}
           </p>
           <p>
-            {" "}
-            <strong> Number:</strong> {userInformation.number}
+            <strong>Number:</strong> {userInformation.number || "N/A"}
           </p>
           <p className="text-gray-500 mt-1">
             Manage and view all announcements
@@ -147,37 +157,25 @@ const Dashboard = () => {
                   key={index}
                   className="bg-white p-5 rounded-lg shadow-md hover:shadow-xl transition duration-300 border border-gray-100"
                 >
-                  <p className=" text-gray-800 mb-2">
-                    <strong className="text-black">Title :</strong>{" "}
+                  <p className="text-gray-800 mb-2">
+                    <strong className="text-black">Title:</strong>{" "}
                     {announcement.title}
                   </p>
                   <p className="text-gray-600 mb-3 line-clamp-3">
-                    <strong className="text-black">Description :</strong>
+                    <strong className="text-black">Description:</strong>{" "}
                     {announcement.description}
                   </p>
-
-                  {userInformation.name === announcement.admin.name ? (
+                  {userInformation.name === announcement.admin?.name ? (
                     <strong>Made By You</strong>
                   ) : (
-                    <p>Announcement Made by: {announcement.admin.name}</p>
+                    <p>
+                      Announcement Made by:{" "}
+                      {announcement.admin?.name || "Unknown"}
+                    </p>
                   )}
-
-                  {/* 
-                  <p className="text-gray-600 mb-3 line-clamp-3">
-                    <strong className="text-black">Made By :</strong>{" "}
-                    {announcement.admin.name}
-                  </p> */}
-                  {/* 
-                  <p className="text-gray-600 mb-3 line-clamp-3">
-                    <strong className="text-black">Number : </strong>{" "}
-                    {announcement.admin.number}
-                  </p> */}
-
-                  {userInformation.number ===
-                  announcement.admin.number ? null : (
-                    <p>Number : {announcement.admin.number}</p>
+                  {userInformation.number !== announcement.admin?.number && (
+                    <p>Number: {announcement.admin?.number || "N/A"}</p>
                   )}
-
                   <p className="text-xs text-gray-400">
                     {new Date(announcement.timestamp).toLocaleString()}
                   </p>

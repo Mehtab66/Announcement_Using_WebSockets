@@ -63,3 +63,17 @@ module.exports.loginUser = async (req, res) => {
     });
   }
 };
+
+//get user
+module.exports.getUser = async (req, res) => {
+  try {
+    const id = req.user.id;
+    const user = await User.findById(id).select("-password");
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Server Error",
+    });
+  }
+};

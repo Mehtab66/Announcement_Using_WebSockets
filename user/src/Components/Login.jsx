@@ -2,7 +2,9 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import useStore from "../Store/Store";
 const Login = () => {
+  const { setUserToken } = useStore();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -29,8 +31,7 @@ const Login = () => {
         if (response.status === 200) {
           toast.success("Login Successful");
           navigate("/dashboard");
-          console.log(data.token);
-          localStorage.setItem("token", data.token);
+          setUserToken(data.token);
         } else {
           toast.error(data.message);
         }
