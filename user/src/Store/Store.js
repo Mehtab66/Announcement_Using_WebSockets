@@ -29,7 +29,6 @@ const useStore = create((set, get) => ({
   },
 
   checkAuth: () => {
-    console.log("Checking auth...");
     const token = localStorage.getItem("token");
     if (token) {
       set({ userToken: token, isAuthenticated: true });
